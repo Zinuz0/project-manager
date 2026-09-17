@@ -1,0 +1,18 @@
+> we're building a kanban project manager application
+> the application has a login and register interface for each user, if the user is new then they will be able to register and on login will not recieve any roles, they will only recieve roles when they are added to a project by the owner or the admin and are gien their respective roles by them. There are a total 3 roles : OWNER(restricted only 1), ADMIN, MEMBER  
+> a project once made by the OWNER will be open to adding MEMBERs and ADMINs. each project contains tasks that can be assiged and completed. each project also has a KANBAN BOARD, which is divided into 3 cols. TODO, UNDER PRODUCTION AND COMPLETED. each task is present inside one of the 3 cols once created and can be dragged to either of the cols. the board keeps track of the tasks created and records their progress. 
+> the ADMIN will be able to assign tasks to other MEMBERs and ADMINs andcomplete tasks themself.
+1. the user will be able to create a project
+TO DO
+1. memebers can be added only through the addmembers fn in the project
+2. same for each task
+3. should i keep the admin and memebers list differnet frm the members list? for the project as a whole
+4. when member is added to a project create their own personal room and the room for all members collectively too and use it to notify them
+5. when a member specifc action is taken report only to those member and their individual rooms an notify them
+6. when a project/task specific action is taken report it to the entire project/task and notify them 
+7. how do i get the emitted signal for each project, task, and notification and how do i recieve each one 
+8. will have to make a file with separate sockets one for project, notifs, and tasks.
+
+how do i implement authorization for the different roles in the project?
+1. you can implement authorization for different roles in the project by creating middleware functions that check the user's role before allowing access to certain routes or actions. For example, you can create a middleware function called `authorizeRole` that takes in the required role(s) as parameters and checks if the authenticated user has the necessary role to perform the action. If the user does not have the required role, you can return a 403 Forbidden response. You can then apply this middleware to your routes that require specific roles, such as adding members, assigning tasks, or managing the project.
+2. In your project controller, you can check the user's role before performing actions like adding members or assigning tasks. For example, when adding a member, you can check if the user is an OWNER or ADMIN before allowing them to add a new member. If the user does not have the required role, you can return a 403 Forbidden response.
