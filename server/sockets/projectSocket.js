@@ -1,33 +1,47 @@
 export const handleProjectSocket = (io) => {
-  io.on('connection', (socket) => {
-    console.log('User connected to socket:', socket.id);
+    io.on('connection', (socket) => {
+        console.log('User connected to project socket:', socket.id);
 
-    socket.on('joinProject', (projectId) => {
-      socket.join(projectId);
-      console.log(`Socket ${socket.id} joined project room: ${projectId}`);
+        socket.on('joinProject', (projectId) => {
+            socket.join(projectId);
+            console.log(`Socket ${socket.id} joined project room: ${projectId}`);
+        });
+
+        socket.on('leaveProject', (projectId) => {
+            socket.leave(projectId);
+            console.log(`Socket ${socket.id} left project room: ${projectId}`);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('User disconnected from project socket:', socket.id);
+        });
+
+        socket.on('addedToProject', (projectId, addedUserId) => {
+            io.to(addedUserId).emit('addedToProjectNotification', { projectId, addedUserId });
+            socket.join(projectId);
+            console.log(`User ${addedUserId} added to project ${projectId}`);
+        });
+
+        socket.on('removedFromProject', (projectId, removedUserId) => {
+             io.to(removedUserId).emit('removedFromProjectNotification', { projectId, removedUserId });
+            socket.leave(projectId);
+            console.log(`User ${removedUserId} removed from project ${projectId}`);
+        });
+
+        socket.on('projectUpdated', (projectId, updatedData) => {
+            io.to(projectId).emit('projectUpdatedNotification', { projectId, updatedData });
+            console.log(`Project ${projectId} updated with data:`, updatedData);
+        });
+
+        socket.on('projectDeleted', (projectId) => {
+            io.to(projectId).emit('projectDeletedNotification', { projectId });
+            io.in(projectId).socketsLeave(projectId);
+            console.log(`Project ${projectId} has been deleted`);
+        });
     });
-
-    socket.on('leaveProject', (projectId) => {
-      socket.leave(projectId);
-      console.log(`Socket ${socket.id} left project room: ${projectId}`);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('User disconnected from socket:', socket.id);
-    });
-  });
-}
-
-export const handleNotification = (io, recipientId, notification) => {
-  // Emit the notification to the specific recipient's room
-  io.to(recipientId).emit('newNotification', notification);
-
-  socket.on('newNotification', (notification) => {
-    console.log('New notification received:', notification);
-  }); 
-  
 };
 
+/*
 //io.to vs io.on: io.to emits to a specific room, while io.on listens for events. like for example, io.to(recipientId).emit('newNotification', notification) sends the notification to the specific recipient's room, while io.on('newNotification', ...) listens for incoming notifications from clients.
 
 // socket.emit vs io.to: socket.emit sends an event to the specific socket that triggered the event, while io.to emits to all sockets in a specific room. For example, socket.emit('newNotification', notification) sends the notification only to the socket that triggered the event, while io.to(recipientId).emit('newNotification', notification) sends the notification to all sockets in the recipient's room. what do you mean room? A room in Socket.IO is a way to group sockets together. Each socket can join one or more rooms, and you can emit events to all sockets in a specific room. In this context, when a user joins a project, their socket is added to a room named after the project ID. This allows you to send notifications or messages specifically to users who are part of that project by emitting events to that room. if you want to send a notification to a specific user, you can create a room for that user using their user ID. When the user connects, their socket joins a room named after their user ID. Then, when you want to send a notification to that user, you can emit the event to that room using io.to(userId).emit('newNotification', notification). This way, only the sockets in that user's room will receive the notification.
@@ -43,4 +57,3 @@ export const handleNotification = (io, recipientId, notification) => {
 
 This way, users will receive notifications instantly without needing to refresh or make additional requests to check for new notifications.
 */ 
-
