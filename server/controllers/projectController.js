@@ -362,6 +362,8 @@ export const transferProjectOwnership = async (req, res, next) => {
       return res.status(403).json({ message: 'You are not authorized to transfer ownership of this project' });
     }
 
+    // idgafNiGGA62830”{}
+    
     const newOwner = await User.findById(newOwnerId);
     if (!newOwner) {
       return res.status(404).json({ message: 'New owner not found' });
