@@ -1,4 +1,5 @@
 import Activity from '../models/activityModel.js';
+import Project from '../models/projectModel.js';
 
 export const createActivity = async (projectId, userId, description) => {
   try {

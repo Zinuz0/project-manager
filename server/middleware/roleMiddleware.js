@@ -1,3 +1,6 @@
+import Project from '../models/projectModel.js';
+import User from '../models/userModel.js';
+
 export const isAuthorized = async (userId, projectId, role) => {
   const project = await Project.findById(projectId);
   if (!project) {
