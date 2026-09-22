@@ -23,6 +23,7 @@ import projectRoutes from './routes/projectRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import activityRoutes from './routes/activityRoutes.js';
 import { handleProjectSocket } from './sockets/projectSocket.js';
 
 // Setup sockets
@@ -41,6 +42,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/activities', activityRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
@@ -55,7 +57,9 @@ const subClient = pubClient.duplicate();
 Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
   io.adapter(createAdapter(pubClient, subClient));
   console.log("Redis adapter attached to socket.io");
-})
+}).catch((err) => {
+  console.error("Redis connection failed:", err.message);
+});
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
