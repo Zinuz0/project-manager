@@ -59,7 +59,57 @@ export const register = async (name, email, password) => {
 
 export const getProfile = async () => {
     try{
-        const response = await axios.get(`${API_URL}/profile`, { withCredentials: true }); // withCredentials: true is used to send cookies with the request, which is necessary for session management when using JWTs stored in cookies. what it means is that when you make a request to the server, the browser will include any cookies associated with the domain of the request. 
+        const response = await axios.get(`${API_URL}/profile`, { withCredentials: true });  
+        return response.data;
+    }
+    catch (error) {
+        throw error.response.data;
+    }
+};
+
+export const updateProfile = async (name, email) => {
+    try{
+        const response = await axios.put(`${API_URL}/profile`, { profileData: { name, email } }, { withCredentials: true });
+        return response.data;
+    }
+    catch (error) {
+        throw error.response.data;
+    }
+};
+
+export const changePassword = async(oldPassword, newPassword) => {
+    try{
+        const response = await axios.put(`${API_URL}/change-password`, { oldPassword, newPassword }, { withCredentials: true });
+        return response.data;
+    }
+    catch (error) {
+        throw error.response.data;
+    }
+};
+
+export const forgotPassword = async (email) => {
+    try{
+        const response = await axios.post(`${API_URL}/forgot-password`, { email }, { withCredentials: true });
+        return response.data;
+    }
+    catch (error) {
+        throw error.response.data;
+    }
+};
+
+export const searchUsers = async (query) => {
+    try{
+        const response = await axios.get(`${API_URL}/search-users?query=${query}`, { withCredentials: true });
+        return response.data;
+    }
+    catch (error) {
+        throw error.response.data;
+    }
+};
+
+export const getUserById = async (userId) => {
+    try{
+        const response = await axios.get(`${API_URL}/user/${userId}`, { withCredentials: true });
         return response.data;
     }
     catch (error) {

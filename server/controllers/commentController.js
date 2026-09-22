@@ -30,7 +30,7 @@ export const createComment = async (req, res, next) => {
   }
 };
 
-export const getComments = async (req, res, next) => {
+export const getAllCommentsForTask = async (req, res, next) => {
   try {
     const { taskId } = req.params;
 

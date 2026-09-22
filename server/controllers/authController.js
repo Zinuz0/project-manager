@@ -95,7 +95,7 @@ export const logoutUser = (req, res) => {
   return res.status(200).json({ message: 'Logout successful' });
 };
 
-export const getUserProfile = async (req, res, next) => { // whats this fucntion for? it retrieves the profile information of the currently authenticated user. It assumes that there is middleware in place that verifies the JWT token and sets `req.user` with the user's information. The function then fetches the user's details from the database (excluding the password) and returns it in the response. If the user is not found, it returns a 404 error. so how it would work in pra
+export const getUserProfile = async (req, res, next) => { 
   try {
     const userId = req.user.id; // Assuming you have middleware that sets req.user based on the JWT token
 

@@ -52,6 +52,26 @@ export const createTask = async (req, res, next) => {
     next(error);
   }
 };
+/*
+the axios api function for this function would look like this:
+export const createTask = async (projectId, title, description, assigneeIds, dueDate) => {
+  try {
+    const response = await axios.post(`${API_URL}/tasks`, { projectId, title, description, assigneeIds, dueDate }, { withCredentials: true });
+    return response.data;
+  } catch (error) {
+    throw error.response.data;
+  } 
+could i write it like:
+export const createTask = async (taskData) => {
+    try {
+        const response = await axios.post(`${API_URL}/tasks`, { taskData }, { withCredentials: true });
+        return response.data;
+    } catch (error) {
+        throw error.response.data;
+    }
+};
+
+*/
 
 export const getTaskById = async (req, res, next) => {
   try {
@@ -69,11 +89,7 @@ export const getTaskById = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-}; // authorization is left do it
-
-{
-// do i need to add a function to drag and drop tasks in the kanban board? or is that handled in the frontend? i think it should be handled in the frontend, but the backend should have an endpoint to update the task's status when it's moved to a different column.
-}
+};
 
 export const updateTask = async(req, res, next) => {
   try{
@@ -142,9 +158,6 @@ export const deleteTask = async (req, res, next) => {
     }
 
     res.status(200).json({ message: 'Task deleted successfully' });
-    { 
-    // how do i automatically remove the task from the project when it's deleted? do i need to add a reference to the task in the project model? or can i just remove it from the tasks collection and it will be gone? i think i need to add a reference to the task in the project model, so that when a task is deleted, it can be removed from the project's tasks array. also how to i remove the task from the members' and admin's tasks array? do i need to add a reference to the task in the user model? or can i just remove it from the tasks collection and it will be gone? i think i need to add a reference to the task in the user model, so that when a task is deleted, it can be removed from the user's tasks array. should the reference be in the project model or the user model? i think it should be in the project model, because a task belongs to a project, and a user can have many tasks from different projects. so when a task is deleted, it should be removed from the project's tasks array, and also from the user's tasks array. how do i do that? i can use the $pull operator to remove the task from the project's tasks array, and also from the user's tasks array. so i need to find all users who have this task in their tasks array, and then use $pull to remove it.
-    }
   }
   catch (error) {
     next(error);
@@ -188,7 +201,8 @@ export const getAllTasksForProject = async (req, res, next) => {
 export const assignTaskToMember = async (req, res, next) => {
   try {
     const { userId } = req.user; 
-    const { taskId, assigneeId, projectId } = req.body;
+    const {taskId } = req.params;
+    const { assigneeId, projectId } = req.body;
 
     if (!taskId){
       return res.status(400).json({ message: 'Task ID is required' });

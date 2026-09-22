@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import http from 'http';
 import { Server } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { createClient } from 'redis';
 import connectDB from './config/db.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
 
@@ -46,6 +48,14 @@ app.get('/', (req, res) => {
 
 // Error handling middleware
 app.use(errorHandler);
+
+const pubClient = createClient({ url: 'redis://localhost:6379' });
+const subClient = pubClient.duplicate();
+
+Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+  io.adapter(createAdapter(pubClient, subClient));
+  console.log("Redis adapter attached to socket.io");
+})
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {

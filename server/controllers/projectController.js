@@ -66,7 +66,26 @@ export const getAllProjects = async (req, res, next) => {
   catch (error) {
     next(error);
   }
-}; // done
+}; // how should the axios api for this function look like? The axios API call for this function would look like this:
+// export const getAllProjects = async (userId) => {
+//     try {
+//         const response = await axios.get(`${API_URL}/projects`, { user: { userId } }, { withCredentials: true });
+//         return response.data;
+//     } catch (error) {
+//         throw error.response.data;
+//     }
+// };
+// why are we sending the userId in the request body? The userId is sent in the request body to identify which user's projects we want to retrieve. In this case, the server uses the userId to find all projects that the user is a member of. However, since we are using authentication middleware that sets req.user based on the JWT token, we don't actually need to send the userId in the request body. The server can extract the userId directly from req.user, making it unnecessary to include it in the request body. hence we can also rewrite the api call like this:
+// export const getAllProjects = async () => {
+//     try {
+//         const response = await axios.get(`${API_URL}/projects`, { withCredentials: true });
+//         return response.data;
+//     } catch (error) {
+//         throw error.response.data;
+//     }
+// };
+
+
 
 export const editProject = async (req, res, next) => {
   try {
@@ -117,6 +136,12 @@ export const deleteProject = async (req, res, next) => {
     const { userId } = req.user;
     const { projectId } = req.params;
     const { members } = req.body;
+    // how do i make the axios api for this function? you can make the axios API call for this function like this:
+    // const response = await axios.delete(`${API_URL}/projects/${projectId}`, { data: { members } }, { withCredentials: true });
+    // return response.data;
+    // how to give th req.user in the axios api? you can include the user information in the request headers or as part of the request body. For example, you can send the user ID in the request headers like this:
+    // return response.data;  
+    // for the body of any request you must always send the data in the data field of the axios request. The data field is used to send the request body in axios. In this case, you are sending the members array in the request body, so you need to include it in the data field of the axios request.
 
     if(!projectId) {
       return res.status(400).json({ message: 'Project ID is required' });
@@ -177,7 +202,7 @@ export const getProjectById = async (req, res, next) => {
   }
 }; // done
 
-export const addMemberToProject = async (req, res, next) => {
+export const addMembersToProject = async (req, res, next) => {
   try {
     const { userId } = req.user;
     const { projectId } = req.params;
