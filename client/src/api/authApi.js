@@ -29,13 +29,9 @@ export const login = async (email, password) => {
     const response = await axios.post(`${API_URL}/login`, { email, password }, { withCredentials: true });
     return response.data;
   } catch (error) {
-    throw error.response.data;
+    throw error?.response?.data || { message: error.message || 'Login failed' };
   }
 };
-
-/* 
-withCredentials: true is used to send cookies with the request, which is necessary for session management when using JWTs stored in cookies. what it means is that when you make a request to the server, the browser will include any cookies associated with the domain of the request. This is important for authentication because it allows the server to recognize the user based on the JWT stored in the cookie, enabling secure access to protected routes and resources.
-*/
 
 export const logout = async () => {
   try {
@@ -43,17 +39,17 @@ export const logout = async () => {
     return response.data;
   }
   catch (error) {
-    throw error.response.data;
+    throw error?.response?.data || { message: error.message || 'Logout failed' };
   }
 };
 
-export const register = async (name, email, password) => {
+export const register = async (username, email, password) => {
   try {
-    const response = await axios.post(`${API_URL}/register`, { name, email, password }, { withCredentials: true });
+    const response = await axios.post(`${API_URL}/register`, { username, name: username, email, password }, { withCredentials: true });
     return response.data;
   }
   catch (error) {
-    throw error.response.data;
+    throw error?.response?.data || { message: error.message || 'Registration failed' };
   }
 };
 
@@ -63,7 +59,7 @@ export const getProfile = async () => {
     return response.data;
   }
   catch (error) {
-    throw error.response.data;
+    throw error?.response?.data || { message: error.message || 'Failed to fetch profile' };
   }
 };
 
@@ -73,7 +69,7 @@ export const updateProfile = async (name, email) => {
     return response.data;
   }
   catch (error) {
-    throw error.response.data;
+    throw error?.response?.data || { message: error.message || 'Failed to update profile' };
   }
 };
 
@@ -83,7 +79,7 @@ export const changePassword = async (oldPassword, newPassword) => {
     return response.data;
   }
   catch (error) {
-    throw error.response.data;
+    throw error?.response?.data || { message: error.message || 'Failed to change password' };
   }
 };
 
@@ -93,7 +89,7 @@ export const forgotPassword = async (email) => {
     return response.data;
   }
   catch (error) {
-    throw error.response.data;
+    throw error?.response?.data || { message: error.message || 'Failed request' };
   }
 };
 
@@ -103,7 +99,7 @@ export const searchUsers = async (query) => {
     return response.data;
   }
   catch (error) {
-    throw error.response.data;
+    throw error?.response?.data || { message: error.message || 'Failed search' };
   }
 };
 
@@ -113,7 +109,7 @@ export const getUserById = async (userId) => {
     return response.data;
   }
   catch (error) {
-    throw error.response.data;
+    throw error?.response?.data || { message: error.message || 'Failed to fetch user' };
   }
 };
 

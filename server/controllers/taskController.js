@@ -164,20 +164,20 @@ export const deleteTask = async (req, res, next) => {
   }
 };
 
-// export const getAllTasksForMember = async (req, res, next) => {
-//   try {
-//     const { userId } = req.params;
-//     if (!userId) {
-//       return res.status(400).json({ message: 'User ID is required' });
-//     }
+export const getAllTasksForMember = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
 
-//     const tasks = await Task.find({ assignee: userId }).populate('project', 'name description status createdAt updatedAt comments').populate('assignee', 'username email');
+    const tasks = await Task.find({ assignee: userId }).populate('project', 'name description status createdAt updatedAt comments').populate('assignee', 'username email');
 
-//     res.status(200).json(tasks);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
+    res.status(200).json(tasks);
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const getAllTasksForProject = async (req, res, next) => {
   try {

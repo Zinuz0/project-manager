@@ -1,4 +1,5 @@
-import Comment from '../models/Comment.js';
+import Comment from '../models/commentModel.js';
+import User from '../models/userModel.js';
 
 export const createComment = async (req, res, next) => {
   try {
@@ -40,9 +41,12 @@ export const getAllCommentsForTask = async (req, res, next) => {
     }
 
     // Fetch comments for the given taskId
-    const comments = await Comment.find({ task: taskId }).populate('author', 'name email avatar');
+    const comments = await Comment.find({ task: taskId }).populate('author', 'username name email avatar');
     res.status(200).json(comments);
   } catch (error) {
     next(error);
   }
 };
+
+export const getComments = getAllCommentsForTask;
+

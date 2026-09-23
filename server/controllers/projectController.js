@@ -1,5 +1,5 @@
-import User from '../models/User.js';
-import Project from '../models/Project.js';
+import User from '../models/userModel.js';
+import Project from '../models/projectModel.js';
 import { io } from '../server.js'; 
 import ProjectMember from '../models/projectMemberModel.js';
 
@@ -401,3 +401,7 @@ export const transferProjectOwnership = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getProjects = getAllProjects;
+export const addMemberToProject = addMembersToProject;
+

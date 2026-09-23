@@ -1,5 +1,5 @@
-import Notification from '../models/Notification.js';
-import User from '../models/User.js';
+import Notification from '../models/notificationModel.js';
+import User from '../models/userModel.js';
 import { io } from '../server.js'; // Import the io instance from your server setup
 
 export const createNotification = async (req, res, next) => {
@@ -63,3 +63,6 @@ export const getNotifications = async (req, res, next) => {
     next(error);
   }
 };
+
+export const createNotifications = createNotification;
+
