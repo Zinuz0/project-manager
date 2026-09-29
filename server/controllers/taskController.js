@@ -1,11 +1,13 @@
 import Project from '../models/projectModel.js';
 import Task from '../models/taskModel.js';
 import User from '../models/userModel.js';
+import { io } from '../server.js';
 
+// Create a new task in a project
 export const createTask = async (req, res, next) => {
   try {
     const { userId } = req.user;
-    const { projectId, title, description, assigneeIds, dueDate } = req.body;
+    const { projectId, title, description, assigneeIds = [], dueDate } = req.body;
 
     if (!projectId || !title || !description) {
       return res.status(400).json({ message: 'Project ID, title, and description are required' });
@@ -16,63 +18,47 @@ export const createTask = async (req, res, next) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    if (userId !== project.owner.toString() && !project.admin.includes(userId)) {
+    const isOwner = project.owner.toString() === userId;
+    const isAdmin = project.admin.some(id => id.toString() === userId);
+
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({ message: 'You are not authorized to create a task in this project' });
     }
-    
-    // Validate assignees existence
+
+    // Validate assignee membership
     for (const assigneeId of assigneeIds) {
       const assignee = await User.findById(assigneeId);
       if (!assignee) {
         return res.status(404).json({ message: `Assignee with ID ${assigneeId} not found` });
       }
-      if(!project.members.includes(assigneeId)) {
+      if (!project.members.some(id => id.toString() === assigneeId.toString())) {
         return res.status(400).json({ message: `Assignee with ID ${assigneeId} is not a member of the project` });
       }
-      // Add the task to the assignee's tasks array
-      await User.findByIdAndUpdate(assigneeId, { $push: { tasks: newTask._id } });
-      io.to(`user ${assigneeId}`).emit('taskAssigned', newTask);
     }
-    
 
     const newTask = new Task({
       project: projectId,
       title,
       description,
-      assignee: assigneeIds || [],
+      assignee: assigneeIds,
       dueDate: dueDate ? new Date(dueDate) : null,
-      creator: userId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      creator: userId
     });
 
     await newTask.save();
+
+    for (const assigneeId of assigneeIds) {
+      await User.findByIdAndUpdate(assigneeId, { $addToSet: { tasks: newTask._id } });
+      io.to(`user ${assigneeId}`).emit('taskAssigned', newTask);
+    }
+
     res.status(201).json(newTask);
   } catch (error) {
     next(error);
   }
 };
-/*
-the axios api function for this function would look like this:
-export const createTask = async (projectId, title, description, assigneeIds, dueDate) => {
-  try {
-    const response = await axios.post(`${API_URL}/tasks`, { projectId, title, description, assigneeIds, dueDate }, { withCredentials: true });
-    return response.data;
-  } catch (error) {
-    throw error.response.data;
-  } 
-could i write it like:
-export const createTask = async (taskData) => {
-    try {
-        const response = await axios.post(`${API_URL}/tasks`, { taskData }, { withCredentials: true });
-        return response.data;
-    } catch (error) {
-        throw error.response.data;
-    }
-};
 
-*/
-
+// Get a single task by ID
 export const getTaskById = async (req, res, next) => {
   try {
     const { taskId } = req.params;
@@ -80,7 +66,10 @@ export const getTaskById = async (req, res, next) => {
       return res.status(400).json({ message: 'Task ID is required' });
     }
 
-    const task = await Task.findById(taskId).populate('project', '').populate('assignee', '');
+    const task = await Task.findById(taskId)
+      .populate('project', 'name description')
+      .populate('assignee', 'username email');
+
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
@@ -91,79 +80,97 @@ export const getTaskById = async (req, res, next) => {
   }
 };
 
-export const updateTask = async(req, res, next) => {
-  try{
-    const { userId } = req.user;
-    const { taskId } = req.params;
-    const{projectId, title, description, status} = req.body;
-
-    const task = await Task.findById(taskId);
-    if(!task){
-      return res.status(404).json({message: 'Task not found'});
-    };
-
-    const isProjectMember = await Project.findOne({_id: projectId, members: userId});
-
-    const isTaskAssignee = await Task.findOne({_id: taskId, assignee: userId});
-
-    if(!projectId.owner.toString() === userId && !projectId.admin.includes(userId) && !taskId.assignee.includes(userId) && !isProjectMember && !isTaskAssignee){
-      return res.status(403).json({message: 'You are not authorized to update this task'});
-    };
-
-    if(userId === task.creator.toString() || projectId.owner.toString() === userId || projectId.admin.includes(userId)){
-      if(title) task.title = title;
-      if(description) task.description = description;
-    }
-    if(status) task.status = status; 
-
-    for (const assigneeId of task.assignee) {
-      io.to(`user ${assigneeId}`).emit('taskUpdated', task);
-    }
-
-    await task.save();
-    return res.status(200).json(task);
-  } 
-  catch(error){
-    next(error);
-  }
-};
-
-export const deleteTask = async (req, res, next) => {
+// Update task title, description, or status
+export const updateTask = async (req, res, next) => {
   try {
     const { userId } = req.user;
     const { taskId } = req.params;
-    const { projectId } = req.body; 
+    const { projectId, title, description, status } = req.body;
 
-    if (!taskId) {
-      return res.status(400).json({ message: 'Task ID is required' });
-    }
-    if (!projectId) {
-      return res.status(400).json({ message: 'Project ID is required' });
-    }
-    if (userId !== projectId.owner.toString() && !projectId.admin.includes(userId)) {
-      return res.status(403).json({ message: 'You are not authorized to delete this task' });
-    }
     const task = await Task.findById(taskId);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    await Task.findByIdAndDelete(taskId); 
+    const targetProjectId = projectId || task.project;
+    const project = await Project.findById(targetProjectId);
 
-    await Project.findByIdAndUpdate(projectId, { $pull: { tasks: taskId } }); 
-    await User.updateMany({ tasks: taskId }, { $pull: { tasks: taskId } }); // remove the task from all users' tasks array
-    
-    for (const assigneeId of task.assignee){
-      io.to(`user ${assigneeId}, task ${taskId}`).emit('taskDeleted', { taskId });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
     }
 
-    res.status(200).json({ message: 'Task deleted successfully' });
-  }
-  catch (error) {
+    const isOwner = project.owner.toString() === userId;
+    const isAdmin = project.admin.some(id => id.toString() === userId);
+    const isAssignee = task.assignee.some(id => id.toString() === userId);
+    const isCreator = task.creator?.toString() === userId;
+
+    if (!isOwner && !isAdmin && !isAssignee && !isCreator) {
+      return res.status(403).json({ message: 'You are not authorized to update this task' });
+    }
+
+    if (isOwner || isAdmin || isCreator) {
+      if (title) task.title = title;
+      if (description) task.description = description;
+    }
+
+    if (status) task.status = status;
+
+    await task.save();
+
+    for (const assigneeId of task.assignee) {
+      io.to(`user ${assigneeId}`).emit('taskUpdated', task);
+    }
+
+    return res.status(200).json(task);
+  } catch (error) {
     next(error);
   }
 };
 
+// Delete a task
+export const deleteTask = async (req, res, next) => {
+  try {
+    const { userId } = req.user;
+    const { taskId } = req.params;
+    const { projectId } = req.body;
+
+    if (!taskId) {
+      return res.status(400).json({ message: 'Task ID is required' });
+    }
+
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    const targetProjectId = projectId || task.project;
+    const project = await Project.findById(targetProjectId);
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const isOwner = project.owner.toString() === userId;
+    const isAdmin = project.admin.some(id => id.toString() === userId);
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'You are not authorized to delete this task' });
+    }
+
+    await Task.findByIdAndDelete(taskId);
+    await User.updateMany({ tasks: taskId }, { $pull: { tasks: taskId } });
+
+    for (const assigneeId of task.assignee) {
+      io.to(`user ${assigneeId}`).emit('taskDeleted', { taskId });
+    }
+
+    res.status(200).json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get all tasks assigned to a specific user
 export const getAllTasksForMember = async (req, res, next) => {
   try {
     const { userId } = req.params;
@@ -171,7 +178,9 @@ export const getAllTasksForMember = async (req, res, next) => {
       return res.status(400).json({ message: 'User ID is required' });
     }
 
-    const tasks = await Task.find({ assignee: userId }).populate('project', 'name description status createdAt updatedAt comments').populate('assignee', 'username email');
+    const tasks = await Task.find({ assignee: userId })
+      .populate('project', 'name description status')
+      .populate('assignee', 'username email');
 
     res.status(200).json(tasks);
   } catch (error) {
@@ -179,90 +188,34 @@ export const getAllTasksForMember = async (req, res, next) => {
   }
 };
 
+// Get all tasks for a given project
 export const getAllTasksForProject = async (req, res, next) => {
   try {
-    const { userId } = req.user;
     const { projectId } = req.params;
 
-    if (!userId) {
-      return res.status(400).json({ message: 'User ID is required' });
-    }
     if (!projectId) {
       return res.status(400).json({ message: 'Project ID is required' });
     }
 
-    const tasks = await Task.find({ project: projectId }).populate('assignee', 'username email').populate('project', 'name description status createdAt updatedAt comments');
+    const tasks = await Task.find({ project: projectId })
+      .populate('assignee', 'username email')
+      .populate('project', 'name description status');
+
     res.status(200).json(tasks);
-  } catch (error){
+  } catch (error) {
     next(error);
   }
 };
 
+// Assign a task to a member
 export const assignTaskToMember = async (req, res, next) => {
   try {
-    const { userId } = req.user; 
-    const {taskId } = req.params;
+    const { userId } = req.user;
+    const { taskId } = req.params;
     const { assigneeId, projectId } = req.body;
 
-    if (!taskId){
-      return res.status(400).json({ message: 'Task ID is required' });
-    }
-
-    if (!projectId){
-      return res.status(400).json({ message: 'Project ID is required' });
-    }
-
-    const project = await Project.findById(projectId);
-    if (!project){
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    if (userId !== project.owner.toString() && !project.admin.includes(userId)) {
-      return res.status(403).json({ message: 'You are not authorized to assign this task' });
-    }
-
-    const task = await Task.findById(taskId);
-    if (!task){
-      return res.status(404).json({ message: 'Task not found' });
-    }
-
-    const assignee = await User.findById(assigneeId);
-    if (!assignee) {
-      return res.status(404).json({ message: 'Assignee not found' });
-    } 
-
-    if(!project.members.includes(assigneeId)) {
-      return res.status(400).json({ message: 'Assignee is not a member of the project' });
-    }
-
-    if(task.assignee.includes(assigneeId)) {
-      return res.status(400).json({ message: 'Assignee is already assigned to this task' });
-    }
-
-    await task.save();
-    await Task.findByIdAndUpdate(taskId, { $addToSet: { assignee: assigneeId } }, { new: true });
-    await User.findByIdAndUpdate(assigneeId, { $addToSet: { tasks: taskId } }, { new: true });
-    for (const id of task.assignee) {
-      io.to(`user ${id}`).emit('taskUpdated', task);
-    }
-    res.status(200).json(task);
-  }
-  catch (error) {
-    next(error);
-  }
-};
-
-export const unassignTaskFromMember = async (req, res, next) => {
-  try {
-    const { userId } = req.user; 
-    const { taskId, assigneeId, projectId } = req.body;
-
-    if (!taskId) {
-      return res.status(400).json({ message: 'Task ID is required' });
-    }
-
-    if (!projectId) {
-      return res.status(400).json({ message: 'Project ID is required' });
+    if (!taskId || !projectId || !assigneeId) {
+      return res.status(400).json({ message: 'Task ID, Project ID, and Assignee ID are required' });
     }
 
     const project = await Project.findById(projectId);
@@ -270,34 +223,85 @@ export const unassignTaskFromMember = async (req, res, next) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    if (userId !== project.owner.toString() && !project.admin.includes(userId)) {
-      return res.status(403).json({ message: 'You are not authorized to unassign this task' });
+    const isOwner = project.owner.toString() === userId;
+    const isAdmin = project.admin.some(id => id.toString() === userId);
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'You are not authorized to assign this task' });
     }
 
     const task = await Task.findById(taskId);
-
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    for(const id in assigneeId){
-      if(!project.members.includes(assigneeId[id])) {
-        return res.status(400).json({ message: `Assignee with ID ${assigneeId[id]} is not a member of the project` });
-      }
-      if(!task.assignee.includes(assigneeId[id])) {
-        return res.status(400).json({ message: `Assignee with ID ${assigneeId[id]} is not assigned to this task` });
-      }
+    const assignee = await User.findById(assigneeId);
+    if (!assignee) {
+      return res.status(404).json({ message: 'Assignee not found' });
     }
-    await Task.findByIdAndUpdate(taskId, { $pull: { assignee: { $in: assigneeId } } }, { new: true });
-    await User.updateMany({ _id: { $in: assigneeId } }, { $pull: { tasks: taskId } }, { new: true });
+
+    if (!project.members.some(id => id.toString() === assigneeId.toString())) {
+      return res.status(400).json({ message: 'Assignee is not a member of the project' });
+    }
+
+    if (task.assignee.some(id => id.toString() === assigneeId.toString())) {
+      return res.status(400).json({ message: 'Assignee is already assigned to this task' });
+    }
+
+    task.assignee.push(assigneeId);
+    await task.save();
+    await User.findByIdAndUpdate(assigneeId, { $addToSet: { tasks: taskId } });
 
     for (const id of task.assignee) {
       io.to(`user ${id}`).emit('taskUpdated', task);
     }
 
     res.status(200).json(task);
+  } catch (error) {
+    next(error);
   }
-  catch (error) {
+};
+
+// Unassign a task from members
+export const unassignTaskFromMember = async (req, res, next) => {
+  try {
+    const { userId } = req.user;
+    const { taskId } = req.params;
+    const { assigneeId, projectId } = req.body;
+
+    if (!taskId || !projectId || !assigneeId) {
+      return res.status(400).json({ message: 'Task ID, Project ID, and Assignee ID are required' });
+    }
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const isOwner = project.owner.toString() === userId;
+    const isAdmin = project.admin.some(id => id.toString() === userId);
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'You are not authorized to unassign this task' });
+    }
+
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    const assigneeIdsToRemove = Array.isArray(assigneeId) ? assigneeId : [assigneeId];
+
+    task.assignee = task.assignee.filter(id => !assigneeIdsToRemove.includes(id.toString()));
+    await task.save();
+    await User.updateMany({ _id: { $in: assigneeIdsToRemove } }, { $pull: { tasks: taskId } });
+
+    for (const id of task.assignee) {
+      io.to(`user ${id}`).emit('taskUpdated', task);
+    }
+
+    res.status(200).json(task);
+  } catch (error) {
     next(error);
   }
 };

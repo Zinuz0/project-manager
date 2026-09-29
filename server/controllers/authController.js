@@ -42,9 +42,8 @@ export const registerUser = async (req, res, next) => {
     });
 
     const token = generateToken(newUser._id);
-    res.cookie('token', token, cookieOptions); 
-    /*what this line does is it sets a cookie named 'token' in the response with the generated JWT token. The cookie options specify that the cookie is HTTP-only (not accessible via JavaScript), secure (only sent over HTTPS in production), has a strict same-site policy, and expires after 7 days. This allows the client to store the token securely for subsequent authenticated requests. previously, the token was only sent in the response body, but now it is also stored in a cookie for easier access on the client side. what happens after its sent in the response body is that the client can store it (e.g., in localStorage or sessionStorage) and include it in the Authorization header for future requests. However, storing it in a cookie allows the browser to automatically send it with each request to the server, simplifying authentication management on the client side. example of auth header usage: The client can include the token in the Authorization header of subsequent requests like this: `Authorization: Bearer <token>`. This allows the server to verify the token and authenticate the user for protected routes. authorization header is a standard HTTP header used to pass authentication credentials from the client to the server. In the context of JWT (JSON Web Tokens), it is commonly used to send the token that proves the user's identity. The format of the Authorization header for JWT is typically: `Authorization: Bearer <token>`. Here, "Bearer" indicates that the client is using a bearer token for authentication, and `<token>` is the actual JWT string. When the server receives a request with this header, it can extract the token, verify its validity, and authenticate the user accordingly.
-    */
+    res.cookie('token', token, cookieOptions); // Set JWT token in HTTP-only cookie
+
     
 
     await newUser.save();
