@@ -4,18 +4,18 @@ A full-stack, collaborative project management application built with the MERN s
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
-- 📋 **Interactive Drag-and-Drop Kanban Board**: Categorize tasks across status columns (`TODO`, `IN_PROGRESS`, `COMPLETED`) with instant state synchronization via `@hello-pangea/dnd`.
-- 👥 **Role-Based Access Control (RBAC)**: Hierarchical permissions enforcing strict boundaries for **OWNER** (project creator), **ADMIN**, and **MEMBER** roles.
-- ⚡ **Real-Time WebSockets & Scalability**: Multi-client synchronization powered by **Socket.io** and scaled horizontally with a **Redis Pub/Sub Adapter**.
-- 🔔 **Targeted Room Notifications**: Personal and project-level socket rooms providing instant alerts for member additions, task assignments, and updates.
-- 💬 **Collaborative Task Threads**: Commenting system per task with activity feeds tracking project history.
-- 🔐 **Secure Authentication**: JWT-based authentication with encrypted passwords using `bcryptjs`.
+- **Interactive Drag-and-Drop Kanban Board**: Categorize tasks across status columns (`TODO`, `IN_PROGRESS`, `COMPLETED`) with instant state synchronization via `@hello-pangea/dnd`.
+- **Role-Based Access Control (RBAC)**: Hierarchical permissions enforcing strict boundaries for **OWNER** (project creator), **ADMIN**, and **MEMBER** roles.
+- **Real-Time WebSockets & Scalability**: Multi-client synchronization powered by **Socket.io** and scaled horizontally with a **Redis Pub/Sub Adapter**.
+- **Targeted Room Notifications**: Personal and project-level socket rooms providing instant alerts for member additions, task assignments, and updates.
+- **Collaborative Task Threads**: Commenting system per task with activity feeds tracking project history.
+- **Secure Authentication**: JWT-based authentication with encrypted passwords using `bcryptjs`.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **Framework**: React 19, Vite
@@ -33,7 +33,7 @@ A full-stack, collaborative project management application built with the MERN s
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 KANBAN-project-manager-main/
@@ -60,7 +60,7 @@ KANBAN-project-manager-main/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - **Node.js** (v18 or higher recommended)
@@ -103,7 +103,7 @@ The application will be available at `http://localhost:5173`.
 
 ---
 
-## 🔌 API Endpoints Summary
+## API Endpoints Summary
 
 - **Auth**: `/api/auth/register`, `/api/auth/login`
 - **Projects**: `/api/projects` (CRUD operations & member role assignments)
